@@ -64,6 +64,6 @@ CREATE TABLE [AZ_FND_NEST_SF].[STG_FND_PROVISIONAL_ASSET]
 	[ST_HCEElementexists__c] VARCHAR(255) NULL,
 	[ST_AssetCommissioningStatus__c] VARCHAR(255) NULL,
 	[ST_MajorStructure__c] VARCHAR(255) NULL,
-	[SystemModstamp] DATETIME NULL
+	[SystemModstamp] VARCHAR(255) NULL
 ) ON [PRIMARY]
 GO
