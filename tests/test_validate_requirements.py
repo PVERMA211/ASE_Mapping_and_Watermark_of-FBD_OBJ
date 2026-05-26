@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from scripts import validate_requirements
@@ -26,7 +27,7 @@ class ValidateRequirementsTests(unittest.TestCase):
             self.assertEqual(validate_requirements.parse_env(root)["N8N_PORT"], "5678")
 
     def test_python_version_check_rejects_non_314(self) -> None:
-        fake_version = sys.version_info.__class__(3, 12, 0, "final", 0)
+        fake_version = SimpleNamespace(major=3, minor=12, micro=0)
         with mock.patch.object(validate_requirements.sys, "version_info", fake_version):
             passed, message = validate_requirements.check_python_version()
 
