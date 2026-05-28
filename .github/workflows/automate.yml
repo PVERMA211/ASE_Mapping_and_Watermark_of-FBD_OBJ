@@ -1,0 +1,95 @@
+name: ASE Mapping & Watermark Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:          # allow manual trigger from the Actions tab
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1 – Run the test suite
+  # ──────────────────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2 – Run the full pipeline against sample data and upload the report
+  # ──────────────────────────────────────────────────────────────────────────
+  pipeline:
+    name: Run Pipeline
+    runs-on: ubuntu-latest
+    needs: test             # only run if tests pass
+
+    env:
+      FBD_WATERMARK_SECRET: ${{ secrets.FBD_WATERMARK_SECRET }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create sample FBD input
+        run: |
+          cat > /tmp/sample_fbd.json << 'EOF'
+          {
+            "name": "SampleDiagram",
+            "blocks": [
+              {"id": "B1", "type": "AND",  "inputs": ["I1", "I2"], "output": "O1"},
+              {"id": "B2", "type": "OR",   "inputs": ["I3"],        "output": "O2"},
+              {"id": "B3", "type": "NOT",  "inputs": ["I4"],        "output": "O3"},
+              {"id": "B4", "type": "NAND", "inputs": ["I5", "I6"], "output": "O4"}
+            ],
+            "connections": [
+              {"from": "B1.O1", "to": "B2.I3"},
+              {"from": "B2.O2", "to": "B3.I4"},
+              {"from": "B3.O3", "to": "B4.I5"}
+            ]
+          }
+          EOF
+
+      - name: Execute pipeline
+        run: |
+          python src/pipeline.py \
+            --input /tmp/sample_fbd.json \
+            --owner "GitHub Actions" \
+            --output /tmp/sample_fbd.watermarked.json \
+            --report /tmp/pipeline_report.json
+
+      - name: Display pipeline report
+        run: cat /tmp/pipeline_report.json
+
+      - name: Upload pipeline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-output-${{ github.run_number }}
+          path: |
+            /tmp/sample_fbd.watermarked.json
+            /tmp/pipeline_report.json
+          retention-days: 30
