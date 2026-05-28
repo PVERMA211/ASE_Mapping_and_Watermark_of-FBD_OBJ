@@ -169,7 +169,6 @@ class TestRunPipeline:
         assert "watermark" in data["metadata"]
 
     def test_pipeline_fails_on_bad_input(self, tmp_path: Path) -> None:
-        import pytest
         with pytest.raises(RuntimeError, match="step 1"):
             run_pipeline(tmp_path / "ghost.json", owner="X", secret=self.SECRET)
 
